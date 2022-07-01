@@ -1,0 +1,41 @@
+﻿<div class="nav-group" title="Account" style="padding: 10px;">
+    <div class="nav-item" id="list-acct"><a href='@Url.Action("ListUserprofiles")'>Member</a></div>
+</div>
+<div class="nav-group" title="Data" style="padding: 10px;">
+    <div class="nav-item" id="data-import" style="margin-top:0px;"><a href='@Url.Action("ImportData")'>Import</a></div>
+    <div class="nav-item" id="data-list" style="margin-top:5px;"><a href='@Url.Action("ListVehData")'>List</a></div>
+</div>
+@*<div class="nav-group" title="Miscellaneous" style="padding: 10px;">
+    <div class="nav-item" id="smtp-settings" style="margin-top:0px;"><a href='@Url.Action("SmtpSettings")'>SMTP</a></div>
+</div>*@
+
+<style type="text/css">
+    .nav-group ul {
+        margin: 0px 0px 0px 25px;
+        list-style-type: disc;
+    }
+
+    .nav-selected {
+        color: #8CC63E;
+    }
+</style>
+<script type="text/javascript">
+    var group = '@ViewBag.Group', item = '@ViewBag.Item';
+    if (group.length > 0) {
+        $("#aa .nav-group").each(function (idx, elem) {
+            if ($(this).attr("title") && $(this).attr("title") == group) {
+                $(this).attr("data-options", "iconCls:'icon-ok'");
+            }
+        });
+    }
+    if (item.length > 0) {
+        $("#aa .nav-item").each(function (idx, elem) {
+            if ($(this).attr("id") && $(this).attr("id") == item) {
+                $(this).text($(this).find("a").text()).addClass("nav-selected");
+            }
+        });
+    }
+</script>
+
+
+

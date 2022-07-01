@@ -1,0 +1,225 @@
+﻿@{
+    ViewBag.Title = "Miscellaneous - Smtp Settings";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+@section page_header{
+    <style type="text/css">
+        table input[type='text'] {
+            width: 450px;
+        }
+    </style>
+    <script type="text/javascript">
+        var urlGetSettings = '@Url.Action("GetSmtpSettings", "Admin")', urlUpdateSettings = '@Url.Action("UpdateSmtpSettings", "Admin")';
+        var regInt = /^\d+$/i;
+        $.extend($.fn.validatebox.defaults.rules, {
+            integer: {
+                validator: function (value, param) {
+                    return regInt.test(value);
+                },
+                message: 'Please enter an integer.'
+            }
+        });
+
+        $(function () {
+            $("#from").validatebox({
+                required: true,
+                validType: 'email'
+            });
+            $("#host").validatebox({
+                required: true
+            });
+            $("#port").validatebox({
+                validType: 'integer'
+            });
+            LoadSettings();
+
+            $('#tipFrom').tooltip({
+                position: "right",
+                content: "email address"
+            });
+            $('#tipFromName').tooltip({
+                position: "right",
+                content: "Name"
+            });
+
+            $("#enabled").change(function () {
+                if ($(this).prop("checked")) {
+                    $("#fm").form("enableValidation");
+                }
+                else {
+                    $("#fm").form("disableValidation");
+                }
+            });
+
+            $("#btnUpdate").click(function () {
+                var enabled = $("#enabled").prop("checked"), from = $.trim($("#from").val()), fromName = $.trim($("#fromname").val()), host = $.trim($("#host").val()), port = $.trim($("#port").val()), secure = $("input[name='secures']:checked").val(), authentication = $("#authentication").prop("checked"), userName = $.trim($("#username").val()), password = $.trim($("#password").val());
+                if ($("#fm").form("validate")) {
+                    $.ajax({
+                        type: "POST",
+                        url: urlUpdateSettings,
+                        cache: false,
+                        data: { enabled: enabled, from: from, fromname: fromName, host: host, port: port, secure: secure, authentication: authentication, username: userName, password: password },
+                        beforeSend: function () {
+                            $.blockUI({ message: "Processing..." });
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            //alert(jqXHR.status + " " + textStatus + ":" + errorThrown);
+                        },
+                        complete: function () {
+                            $.unblockUI();
+                        },
+                        success: function (result) {
+                            if (result == "ok") {
+                                $.messager.alert("SMTP settings updated", "SMTP settings updated successfully", "info");
+                            }
+                            else {
+                                $.messager.show({
+                                    title: 'Error',
+                                    msg: result
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        function LoadSettings() {
+            $.ajax({
+                type: "POST",
+                url: urlGetSettings,
+                cache: false,
+                data: null,
+                beforeSend: function () {
+                    $.blockUI({ message: "Loading..." });
+                    $("#fm").form("clear");
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    //alert(jqXHR.status + " " + textStatus + ":" + errorThrown);
+                },
+                complete: function () {
+                    $.unblockUI();
+                },
+                success: function (result) {
+                    $("#enabled").prop("checked", result.enabled);
+                    $("#from").val(result.from);
+                    $("#fromname").val(result.fromName);
+                    $("#host").val(result.host);
+                    $("#port").val(result.port);
+                    $("input[type='radio'][value='" + result.secure + "']").prop("checked", true);
+                    $("#authentication").prop("checked", result.authentication);
+                    $("#username").val(result.username);
+                    $("#password").val(result.password);
+
+                    if (result.enabled) {
+                        $("#fm").form("enableValidation");
+                        $("#fm").form("validate");
+                    }
+                    else {
+                        $("#fm").form("disableValidation");
+                    }
+                }
+            });
+        }
+    </script>
+}
+@section nav{
+    <div id="aa" class="easyui-accordion" data-options="multiple:false,selected:1">
+        @Html.Action("Navigation", new { group = "Miscellaneous", item = "smtp-settings" })
+    </div>
+}
+<div style="padding: 5px 15px; font-size: 16px;">SMTP Settings</div>
+<form id="fm" method="post" onsubmit="return false;">
+    <table class="tbl-form" style="width: 98%; margin: 0px auto; border: none;" cellpadding="0" cellspacing="0">
+        <tr>
+            <td style="width: 20%; text-align: right">
+                Enabled?
+            </td>
+            <td style="text-align: left; padding-left: 10px;">
+                <input type="checkbox" id="enabled" name="enabled" />
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: right">
+                From:
+            </td>
+            <td style="text-align: left; padding-left: 10px;">
+                <input type="text" id="from" name="from" />
+                [ <a id="tipFrom" href="javascript:void 0;">?</a> ]
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 20%; text-align: right">
+                Display name:
+            </td>
+            <td style="text-align: left; padding-left: 10px;">
+                <input type="text" id="fromname" name="fromname" />
+                [ <a id="tipFromName" href="javascript:void 0;">?</a> ]
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 20%; text-align: right">
+                Host:
+            </td>
+            <td style="text-align: left; padding-left: 10px;">
+                <input type="text" id="host" name="host" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 20%; text-align: right">
+                Port:
+            </td>
+            <td style="text-align: left; padding-left: 10px;">
+                <input type="text" id="port" name="port" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 20%; text-align: right">
+                SMTP Secure:
+            </td>
+            <td style="text-align: left; padding-left: 10px;">
+                <label style="display: inline; margin-right: 15px;">
+                    <input type="radio" name="secures" id="secure1" value="none" />None
+                </label>
+                <label style="display: inline; margin-right: 15px;">
+                    <input type="radio" name="secures" id="secure2" value="ssl" />SSL
+                </label>
+                <label style="display: inline; margin-right: 15px;">
+                    <input type="radio" name="secures" id="secure3" value="tls" />TLS
+                </label>
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 20%; text-align: right">
+                SMTP Authentication:
+            </td>
+            <td style="text-align: left; padding-left: 10px;">
+                <input type="checkbox" name="authentication" id="authentication" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 20%; text-align: right">
+                Username:
+            </td>
+            <td style="text-align: left; padding-left: 10px;">
+                <input type="text" id="username" name="username" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 20%; text-align: right">
+                Password:
+            </td>
+            <td style="text-align: left; padding-left: 10px;">
+                <input type="password" id="password" name="password" />
+            </td>
+        </tr>
+    </table>
+    <div style="margin-top: 15px; text-align: center;">
+        <input type="submit" id="btnUpdate" name="btnUpdate" value="Save changes" />
+    </div>
+</form>
+<div style="clear: both;">
+    &nbsp;
+</div>
+
+

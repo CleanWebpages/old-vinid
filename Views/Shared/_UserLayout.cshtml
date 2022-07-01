@@ -1,0 +1,199 @@
+﻿@helper GetMenuStyle(List<string> pagecodes)
+{
+    var path = Request.Path.Trim().ToLower();
+    path = path.ToLower().Replace("/vinid/", "/").Replace("/user", "/").TrimStart(new char[] { '/' });
+    if (path.Contains("/"))
+    {
+        path = path.Substring(0, path.IndexOf('/'));
+        if (path.Contains("?"))
+        {
+            path = path.Split(new char[] { '?' })[0];
+        }
+    }
+    if (pagecodes.Any(m => m.ToLower() == path))
+    {<text>menu-btn menu-btn-active</text>}
+else
+{<text>menu-btn</text>}
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIN-ID - @ViewBag.Title</title>
+    @Styles.Render("~/Content/css")
+    <link type="text/css" rel="stylesheet" href="/fonts/fontawesome-free-5.8.2-web/css/all.min.css" />
+    <style type="text/css">
+        html, body {
+            height: calc(100% - 44px);
+            margin: 0px;
+            padding: 0px;
+            background-color:#000;
+            color:#fff;
+        }
+        hr.header-sep {
+            height: 3px !important;
+            margin: 0px;
+            padding: 0px;
+            background-color: #fff;
+            opacity: 1;
+        }
+
+        .head-row td {
+            padding:5px;
+            background: #222;
+        }
+        .data-row td {
+            padding: 5px;
+        }
+        .data-row-alt td {
+            padding:5px;
+            background: #222;
+        }
+        .data-row:hover td, .data-row-alt:hover td {
+            background: #333;
+        }
+        li.option-row {
+            padding-top:3px;
+            padding-bottom:3px;
+        }
+        li.option-row-alt {
+            padding-top: 3px;
+            padding-bottom: 3px;
+            background: #222;
+        }
+        li.option-row:hover, li.option-row-alt:hover {
+            background: #333;
+        }
+
+        @@media screen and (max-width: 320px) {
+            html, body {
+                font-size: 10pt;
+            }
+        }
+
+        @@media screen and (min-width: 321px) and (max-width: 470px) {
+            html, body {
+                font-size: 11pt;
+            }
+        }
+
+        @@media screen and (min-width: 471px) and (max-width: 768px) {
+            html, body {
+                font-size: 12pt;
+            }
+        }
+
+        @@media screen and (min-width: 769px) and (max-width: 1080px) {
+            html, body {
+                font-size: 13pt;
+            }
+        }
+
+        @@media screen and (min-width: 1081px) {
+            html, body {
+                font-size: 14pt;
+            }
+        }
+
+        .top-menu {
+            position: absolute;
+            width: 270px;
+            margin: 0px;
+            padding: 0px;
+            top: 40px;
+            list-style: none;
+            background-color: #000000;
+        }
+        .top-menu li:first-child {
+            margin-top: 10px;
+        }
+        .top-menu li {
+            margin-left: 15px;
+            margin-bottom: 25px;
+        }
+        .top-menu li a {
+            font-family: DIN,D-DIN;
+            font-size: 21px;
+            font-weight: 500;
+        }
+        .top-menu li a:hover {
+            color: red;
+        }
+        .menu-btn {
+            color: #fafafa;
+        }
+        .menu-btn-active {
+            color: red;
+        }
+    </style>
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @Scripts.Render("~/bundles/modernizr")
+    <link href="@Url.Content("~/Content/jeasyui/themes/icon.css")" rel="Stylesheet" type="text/css" />
+    <link href="@Url.Content("~/Content/jeasyui/themes/default/easyui.css")" rel="Stylesheet" type="text/css" />
+    <script src="@Url.Content("~/Scripts/jquery.blockUI.js")" type="text/javascript"></script>
+    <script src="@Url.Content("~/Scripts/jquery.cookie.js")" type="text/javascript"></script>
+    <script src="@Url.Content("~/Content/jeasyui/jquery.easyui.min.js")" type="text/javascript"></script>
+    <script type="text/javascript">
+        $(function () {
+            $("#btnMenu").on("mouseover", function () {
+                $("#menuTop").show();
+                $(this).find("i").removeClass("fa-bars").addClass("fa-times");
+                $(this).attr({ "data-status": "visible" });
+            });
+            $("#btnMenu").on("mouseout", function () {
+                $("#menuTop").hide();
+                $(this).find("i").removeClass("fa-times").addClass("fa-bars");
+                $(this).attr({ "data-status": "invisible" });
+            });
+            $("#btnMenu").on("click", function () {
+                var status = $(this).attr("data-status");
+                if (status == "visible") {
+                    $("#menuTop").hide();
+                    $(this).find("i").removeClass("fa-times").addClass("fa-bars");
+                    $(this).attr({ "data-status": "invisible" });
+                }
+                else {
+                    $("#menuTop").show();
+                    $(this).find("i").removeClass("fa-bars").addClass("fa-times");
+                    $(this).attr({ "data-status": "visible" });
+                }
+            });
+        });
+
+        function err(target, message) {
+            var t = $(target);
+            if (t.hasClass('textbox-text')) {
+                t = t.parent();
+            }
+            var m = t.next('.error-message');
+            if (!m.length) {
+                m = $('<div class="error-message"></div>').insertAfter(t);
+            }
+            m.html(message);
+        }
+    </script>
+    @RenderSection("page_header", required: false)
+</head>
+<body>
+    <div style="position:absolute; width:100%; height:40px; top:0px; background-color:#000000; z-index:9;">
+        <div id="btnMenu" href="javascript:void 0;" data-status="invisible" style="display:inline-block; padding:5px 0px; vertical-align:middle;">
+            <i class="fa fa-bars" style="margin:0px 15px; color:#ffffff; font-size:30px;"></i>
+            <ul id="menuTop" class="top-menu" style="display:none;">
+                <li><a href='@Url.Action("Index", "User")' class='@GetMenuStyle(new List<string> { "", "index" })'>Home</a></li>
+                <li><a href='@Url.Action("ListVehData", "User")' class='@GetMenuStyle(new List<string> { "listvehdata" })'>VIN List</a></li>
+                <li><a href='@Url.Action("MyProfile", "User")' class='@GetMenuStyle(new List<string> { "myprofile" })'>My Profile</a></li>
+                <li><a href='@Url.Action("LogOff", "Account")' class="menu-btn btn-logoff">Log Out</a></li>
+            </ul>
+        </div>
+        <div style="display:inline-block; height:40px; line-height:40px; color:#ffffff; font-size:18px; font-weight:500; vertical-align:middle;">MENU</div>
+    </div>
+
+    <div class="container body-content">
+        @RenderBody()
+    </div>
+
+    @RenderSection("scripts", required: false)
+</body>
+</html>

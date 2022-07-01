@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIN-ID - @ViewBag.Title</title>
+    @Styles.Render("~/Content/css")
+    <style type="text/css">
+        body {
+            padding: 0px;
+            background-color:#000;
+        }
+        hr.header-sep {
+            height: 3px !important;
+            margin: 0px;
+            padding: 0px;
+            background-color: #fff;
+            opacity: 1;
+        }
+
+        @@media screen and (max-height: 600px){
+            html, body{
+                
+            }
+        }
+
+        @@media screen and (max-width: 320px) {
+            html, body {
+                font-size: 10pt;
+            }
+        }
+
+        @@media screen and (min-width: 321px) and (max-width: 470px) {
+            html, body {
+                font-size: 11pt;
+            }
+        }
+
+        @@media screen and (min-width: 471px) and (max-width: 768px) {
+            html, body {
+                font-size: 12pt;
+            }
+        }
+
+        @@media screen and (min-width: 769px) and (max-width: 1080px) {
+            html, body {
+                font-size: 13pt;
+            }
+        }
+
+        @@media screen and (min-width: 1081px) {
+            html, body {
+                font-size: 14pt;
+            }
+        }
+    </style>
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @Scripts.Render("~/bundles/modernizr")
+    <link href="@Url.Content("~/Content/jeasyui/themes/icon.css")" rel="Stylesheet" type="text/css" />
+    <link href="@Url.Content("~/Content/jeasyui/themes/default/easyui.css")" rel="Stylesheet" type="text/css" />
+    <script src="@Url.Content("~/Scripts/jquery.blockUI.js")" type="text/javascript"></script>
+    <script src="@Url.Content("~/Scripts/jquery.cookie.js")" type="text/javascript"></script>
+    <script src="@Url.Content("~/Content/jeasyui/jquery.easyui.min.js")" type="text/javascript"></script>
+    @RenderSection("page_header", required: false)
+    <script type="text/javascript">
+        function err(target, message) {
+            var t = $(target);
+            if (t.hasClass('textbox-text')) {
+                t = t.parent();
+            }
+            var m = t.next('.error-message');
+            if (!m.length) {
+                m = $('<div class="error-message"></div>').insertAfter(t);
+            }
+            m.html(message);
+        }
+    </script>
+</head>
+<body>
+    <div class="container body-content">
+        @RenderBody()
+    </div>
+
+    @RenderSection("scripts", required: false)
+</body>
+</html>

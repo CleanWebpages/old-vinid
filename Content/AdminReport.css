@@ -1,0 +1,32 @@
+﻿table {
+    border-collapse: collapse;
+}
+
+th {
+    padding: 5px;
+    text-align: center;
+    border: solid 1px silver;
+    font-weight: normal;
+}
+
+td {
+    padding: 5px;
+    border: solid 1px silver;
+}
+
+.inner-table caption {
+    font-weight: normal;
+}
+
+.inner-table tr td:first-child {
+    font-weight: normal;
+}
+
+.inner-table tr td:last-child {
+    font-weight: bold;
+}
+
+.layer-fixed {
+    position: fixed !important;
+    z-index: 3;
+}

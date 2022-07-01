@@ -1,0 +1,233 @@
+﻿@{
+    ViewBag.Title = "Import Data";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section page_header{
+    <link href='@Url.Content("~/Content/mini-upload-form/css/style.css")' type="text/css" rel="stylesheet" />
+    <style type="text/css">
+        .fitem > div:first-child {
+            font-weight: bold;
+        }
+        .error-message {
+            margin: 4px 0 0 0;
+            padding: 0;
+            color: red;
+        }
+    </style>
+    <style type="text/css">
+        .title {
+            font-weight: bold;
+        }
+        .info {
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+    </style>
+    <!-- JavaScript Includes -->
+    <script type="text/javascript" src='@Url.Content("~/Content/mini-upload-form/js/jquery.knob.js")'></script>
+    <!-- jQuery File Upload Dependencies -->
+    <script type="text/javascript" src='@Url.Content("~/Content/mini-upload-form/js/jquery.ui.widget.js")'></script>
+    <script type="text/javascript" src='@Url.Content("~/Content/mini-upload-form/js/jquery.iframe-transport.js")'></script>
+    <script type="text/javascript" src='@Url.Content("~/Content/mini-upload-form/js/jquery.fileupload.js")'></script>
+    <script type="text/javascript">
+        const urlGetImportInfo = '@Url.Action("GetImportInfo", "Admin")', urlImport = '@Url.Action("DoImportData", "Admin")', urlList = '@Url.Action("ListVehData", "Admin")';
+        const saveDir = '@Url.Content("~/Upload/")';
+        let uploadFiles = new Array();
+        let amt = 0;
+
+        function checkSize(file, size) {
+            for (var i = 0; i < file.length; i++) {
+                if(file[i].size > size * 1024) { // bytes
+                    return file[i];
+                }
+            }
+        }
+
+        function checkType(file, type) {
+            for (var i = 0; i < file.length; i++) {
+                var arr = file[i].name.split(".");
+                if (type.indexOf(arr[arr.length - 1]) === -1) {
+                    return file[i];
+                }
+            }
+        }
+
+        $(function () {
+            /* html5 upload tool */
+            $('#drop a').click(function () {
+                $(this).parent().find('input').click();
+            });
+            $('#fmUpload').fileupload({
+                dropZone: $('#drop'),
+                add: function (e, data) {
+                    if (checkSize(data.files, 100 * 1024) != undefined) {
+                        $.messager.alert("Invalid", "The upload file size exceed max value", "warning");
+                        return;
+                    }
+                    else if (checkType(data.files, "csv") != undefined) {
+                        $.messager.alert("Invalid", "The upload file type is error", "warning");
+                        return;
+                    }
+
+                    data.submit();
+                },
+                progress: function (e, data) {
+                    var progress = parseInt(data.loaded / data.total * 100, 10);
+                    $("#lblCurrFile").text("Uploaded: " + progress + "%");
+                    if (progress == 100) {
+                        $("#lblCurrFile").text("Upload completed!");
+                    }
+                },
+                fail: function (e, data) {
+                    $.messager.alert("Error", "upload failed", "error");
+                },
+                done: function (e, data) {
+                    if (data.result && data.result.re) {
+                        if (data.result.re == "ok") {
+                            uploadFiles.push({ filename: data.result.filename, filepath: data.result.msg });
+
+                            $("#filepath").val(data.result.msg);
+                            $("#filename").val(data.result.filename);
+                            var fileUrl = saveDir + getFileName(data.result.msg);
+                            $("#lblCurrFile").html("<a href='" + fileUrl + "'>" + data.result.msg + "</a>");
+
+                            $("#fm").hide();
+                            $("#fmUpload").hide();
+
+                            initImport();
+                        }
+                        else {
+                            data.context.addClass('error');
+                            $.messager.show({
+                                title: 'Error',
+                                msg: data.result.msg
+                            });
+                        }
+                    }
+                    else {
+                        data.context.addClass('error');
+                        $.messager.show({
+                            title: 'Error',
+                            msg: 'Failed'
+                        });
+                    }
+                }
+            });
+
+            $(document).on('drop dragover', function (e) {
+                e.preventDefault();
+            });
+            function formatFileSize(bytes) {
+                if (typeof bytes !== 'number') {
+                    return '';
+                }
+                if (bytes >= 1000000000) {
+                    return (bytes / 1000000000).toFixed(2) + ' GB';
+                }
+                if (bytes >= 1000000) {
+                    return (bytes / 1000000).toFixed(2) + ' MB';
+                }
+                return (bytes / 1000).toFixed(2) + ' KB';
+            }
+        });
+
+        function getFileName(path) {
+            var pos1 = path.lastIndexOf('/');
+            var pos2 = path.lastIndexOf('\\');
+            var pos = Math.max(pos1, pos2)
+            if (pos < 0)
+                return path;
+            else
+                return path.substring(pos + 1);
+        }
+
+        function newImportAction() {
+            $('#fm').form('clear');
+            $("#fm").show();
+            $('#fmUpload ul').html("");
+            $('#fmUpload').show("");
+            uploadFiles = new Array();
+            $("#lblCurrFile").html("");
+            amt = 0;
+        }
+
+        function initImport() {
+            var fileName = $("#filename").val(), filePath = $("#filepath").val();
+            $.ajax({
+                type: "post",
+                url: urlGetImportInfo,
+                cache: false,
+                data: { filename: fileName, filepath: filePath },
+                beforeSend: function () {
+
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    //alert(jqXHR.status + " " + textStatus + ":" + errorThrown);
+                },
+                complete: function () {
+
+                },
+                success: function (data) {
+                    if (data) {
+                        amt = data.totalAmt;
+                        doImport(fileName, filePath);
+                    }
+                }
+            });
+        }
+
+        function doImport(filename, filepath) {
+            $.ajax({
+                type: "post",
+                url: urlImport,
+                cache: false,
+                timeout: 0,
+                data: { filename: filename, filepath: filepath },
+                beforeSend: function () {
+                    $.blockUI({ message: "importing..." });
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    //alert(jqXHR.status + " " + textStatus + ":" + errorThrown);
+                },
+                complete: function () {
+                    $.unblockUI();
+                },
+                success: function (result) {
+                    if (result.re == "ok") {
+                        $("#lblCurrFile").html("Import completed!");
+                        $.messager.alert("importing completed", "importing completed successfully", "info", function () { window.location.href = urlList; });
+                    }
+                    else {
+                        $.messager.alert("importing failed", result.msg, "error");
+                    }
+                }
+            });
+        }
+
+    </script>
+}
+@section nav{
+    <div id="aa" class="easyui-accordion" data-options="multiple:false,selected:1">
+        @Html.Action("Navigation", new { group = "Data", item = "data-import" })
+    </div>
+}
+<div style="padding:40px 20px;">
+    <form id="fmUpload" method="post" action='@Url.Action("UploadFile", "Upload")' enctype="multipart/form-data" onsubmit="return false;">
+        <div id="drop">
+            Drop Here
+            <a>Browse</a>
+            <input type="file" id="FileData" name="FileData" />
+        </div>
+        <ul>
+            <!-- The file uploads will be shown here -->
+        </ul>
+    </form>
+    <form id="fm" method="post" onsubmit="return false;">
+        <div class="fitem">
+            <input type="hidden" id="filepath" />
+            <input type="hidden" id="filename" />
+        </div>
+    </form>
+    <div id="lblCurrFile" style="margin-top: 5px;"></div>
+</div>

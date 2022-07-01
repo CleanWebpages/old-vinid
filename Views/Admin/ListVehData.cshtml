@@ -1,0 +1,364 @@
+﻿@{
+    ViewBag.Title = "Data List";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+@section page_header{
+    <script type="text/javascript">
+        var urlGet = '@Url.Action("GetVehRecords", "Admin")', urlGetById = '@Url.Action("GetVehRecordById", "Admin")', urlDel = '@Url.Action("DelVehRecord", "Admin")';
+
+        $(function () {
+            /* page grid */
+            $('#dg').datagrid({
+                url: urlGet,
+                queryParams: {
+
+                },
+                width: $(".layout-panel-center").width(),
+                height: $(".layout-panel-center").height(),
+                idField: 'id',
+                striped: true,
+                collapsible: true,
+                pageSize: 15,
+                pageList: [15, 30, 45],
+                sortName: 'id',
+                sortOrder: 'asc',
+                pagination: true,
+                fitColumns: true,
+                autoRowHeight: false,
+                rowStyler: function (index, row) {
+                    return 'height:40px;';
+                },
+                singleSelect: true,
+                onBeforeLoad: function (param) {
+                    
+                },
+                loadFilter: function (data) {
+                    for (var i = 0; i < data.rows.length; i++) {
+                        for (var att in data.rows[i]) {
+                            //if (typeof (data.rows[i][att]) == "string") {
+                            //    data.rows[i][att] = data.rows[i][att].replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                            //}
+                        }
+                    }
+                    return data;
+                },
+                onHeaderContextMenu: function (e, field) {
+                    e.preventDefault();
+                    if (!$('#tmenu').length) {
+                        createColumnMenu();
+                    }
+                    $('#tmenu').menu('show', {
+                        left: e.pageX,
+                        top: e.pageY
+                    });
+                },
+                onRowContextMenu: onRowContextMenu,
+                toolbar: "#toolbar"
+            });
+
+            $('#s').searchbox({
+                searcher: function (value, name) {
+                    $('#dg').datagrid('load', {
+                        field: name,
+                        keyword: $.trim(value)
+                    });
+                },
+                menu: '#s_mm',
+                prompt: 'Please Input Value'
+            });
+
+            /* detail panel */
+            $('#dlg').dialog({
+                width: 640,
+                height: $(window).height() * 2 / 3,
+                left: $(window).width() / 2 - 640 / 2,
+                top: $(window).height() / 6,
+                title: 'Vehicle Record',
+                modal: true,
+                resizable: true
+            });
+
+        });
+
+        function createColumnMenu() {
+            var tmenu = $('<div id="tmenu" style="width:100px;"></div>').appendTo('body');
+            var fields = $('#dg').datagrid('getColumnFields');
+            for (var i = 0; i < fields.length; i++) {
+                if (fields[i] == "id")
+                    $('<div iconCls="icon-empty"/>').html(fields[i]).appendTo(tmenu);
+                else
+                    $('<div iconCls="icon-ok"/>').html(fields[i]).appendTo(tmenu);
+            }
+            tmenu.menu({
+                onClick: function (item) {
+                    if (item.iconCls == 'icon-ok') {
+                        $('#dg').datagrid('hideColumn', item.text);
+                        tmenu.menu('setIcon', {
+                            target: item.target,
+                            iconCls: 'icon-empty'
+                        });
+                    } else {
+                        $('#dg').datagrid('showColumn', item.text);
+                        tmenu.menu('setIcon', {
+                            target: item.target,
+                            iconCls: 'icon-ok'
+                        });
+                    }
+                }
+            });
+        }
+
+        function onRowContextMenu(e, rowIndex, rowData) {
+            e.preventDefault();
+            $(this).datagrid('selectRow', rowIndex);
+            $("#c_mm").menu("show", {
+                left: e.pageX,
+                top: e.pageY
+            });
+        }
+
+        function viewRecord() {
+            var row = $('#dg').datagrid('getSelected');
+            if (row) {
+                $.ajax({
+                    type: 'POST',
+                    url: urlGetById,
+                    cache: false,
+                    data: { id: row.id },
+                    beforeSend: function () {
+                        $("#dlg").find(".info").html("");
+                        $('#dlg').dialog("setTitle", "Record " + row.id);
+                        $('#dlg').dialog('open');
+                        $("#dlg").parent().block({ message: "loading..." });
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+
+                    },
+                    complete: function () {
+                        $("#dlg").parent().unblock();
+                    },
+                    success: function (data) {
+                        if (data) {
+                            $("#lblId").text("= " + data.id);
+                            $("#lblVehNo").text("= " + data.veh_no);
+                            $("#lblDataSource").text("= " + data.datasource);
+                            $("#lblDataType").text("= " + data.datatype);
+                            $("#lblCostCategory").text("= " + data.cost_category);
+                            $("#lblDataTypeNumber").text("= " + data.datatype_nbr);
+                            $("#lblVin").text("= " + data.vin);
+                            $("#lblYear").text("= " + data.year);
+                            $("#lblMake").text("= " + data.make);
+                            $("#lblModelFromInvoice").text("= " + data.model_from_invoice);
+                            $("#lblEquipPkg").text("= " + data.equip_pkg);
+                            $("#lblModel").text("= " + data.model);
+                            $("#lblTrim").text("= " + data.trim);
+                            $("#lblTrimShort").text("= " + data.trim_short);
+                            $("#lblEngine").text("= " + data.engine);
+                            $("#lblTransmission").text("= " + data.transmission);
+                            $("#lblDrivetrain").text("= " + data.drivetrain);
+                            $("#lblPackageCode").text("= " + data.package_code);
+                            $("#lblIncluded").text("= " + data.included);
+                            $("#lblOptionName").text("= " + data.option_name);
+                            $("#lblPriceRetail").html("= " + data.price_retail);
+                            $("#lblCost").html("= " + data.cost);
+                            $("#lblProfit").html("= " + data.profit);
+                            $("#lblLender").html("= " + data.lender);
+                            $("#lblManheim").html("= " + data.manheim);
+                        }
+                    }
+                });
+            }
+            else {
+                $.messager.show({
+                    title: 'Invalid',
+                    msg: 'Please select a row'
+                });
+            }
+        }
+
+        function delRecord() {
+            var row = $('#dg').datagrid('getSelected');
+            if (row) {
+                $.messager.confirm('Confirm', 'Are you sure you want to remove this record?', function (r) {
+                    if (r) {
+                        $.ajax({
+                            type: 'POST',
+                            url: urlDel,
+                            cache: false,
+                            data: { id: row.id },
+                            beforeSend: function () {
+
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+
+                            },
+                            complete: function () {
+
+                            },
+                            success: function (result) {
+                                if (result == "ok") {
+                                    $('#dg').datagrid('unselectAll');
+                                    $('#dg').datagrid('reload');
+                                }
+                                else {
+                                    $.messager.show({
+                                        title: 'Error',
+                                        msg: result
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+            else {
+                $.messager.show({
+                    title: 'Invalid',
+                    msg: 'Please select a row'
+                });
+            }
+        }
+    </script>
+}
+@section nav{
+    <div id="aa" class="easyui-accordion" data-options="multiple:false,selected:1">
+        @Html.Action("Navigation", new { group = "Data", item = "data-list" })
+    </div>
+}
+<div class="grid">
+    <table id="dg" title="Data">
+        <thead>
+            <tr>
+                <th field="id" data-options="width:30,hidden:true,sortable:true">
+                    <span style="color: green; font-weight: bold;">ID</span>
+                </th>
+                <th field="vin" data-options="width:100,sortable:true">
+                    <span style="color: green; font-weight: bold;">VIN</span>
+                </th>
+                <th field="datatype" data-options="width:50,sortable:true">
+                    <span style="color: green; font-weight: bold;">Data Type</span>
+                </th>
+                <th field="year" data-options="width:30,sortable:true">
+                    <span style="color: green; font-weight: bold;">Year</span>
+                </th>
+                <th field="make" data-options="width:30,sortable:true">
+                    <span style="color: green; font-weight: bold;">Make</span>
+                </th>
+                <th field="model" data-options="width:50,sortable:true">
+                    <span style="color: green; font-weight: bold;">Model</span>
+                </th>
+                <th field="included" data-options="width:30,sortable:true,align:'center'">
+                    <span style="color: green; font-weight: bold;">Included?</span>
+                </th>
+                <th field="price_retail" data-options="width:50,sortable:true,align:'right'">
+                    <span style="color: green; font-weight: bold;">Price (Retail)</span>
+                </th>
+                <th field="cost" data-options="width:50,sortable:true,align:'right'">
+                    <span style="color: green; font-weight: bold;">Cost</span>
+                </th>
+                <th field="profit" data-options="width:50,sortable:true,align:'right'">
+                    <span style="color: green; font-weight: bold;">Profit</span>
+                </th>
+                <th field="lender" data-options="width:50,sortable:true,align:'right'">
+                    <span style="color: green; font-weight: bold;">Lender</span>
+                </th>
+                <th field="manheim" data-options="width:50,sortable:true,align:'right'">
+                    <span style="color: green; font-weight: bold;">Manheim</span>
+                </th>
+            </tr>
+        </thead>
+    </table>
+    <div id="toolbar">
+        <a href="javascript:void 0;" class="easyui-linkbutton" iconcls="icon-tip" plain="true" onclick="viewRecord()" style="float: left;">View</a>
+        <div class="datagrid-btn-separator"></div>
+        <div style="float: right; padding-top: 3px;">
+            <input id="s" style="width:300px;" />
+        </div>
+        <div style="clear: both;">
+        </div>
+    </div>
+    <div id="s_mm" style="width: 120px;">
+        <div data-options="name:'s_vin'">VIN</div>
+    </div>
+    <div id="c_mm" class="easyui-menu" style="width: 120px;">
+        <div onclick="viewRecord()" data-options="iconCls:'icon-tip'">
+            View
+        </div>
+    </div>
+</div>
+<div id="dlg" class="easyui-dialog" style="padding: 10px 10px 0px 10px;" closed="true">
+    <div class="title">ID</div>
+    <div id="lblId" class="info"></div>
+
+    <div class="title">Veh No</div>
+    <div id="lblVehNo" class="info"></div>
+
+    <div class="title">Data Source</div>
+    <div id="lblDataSource" class="info"></div>
+
+    <div class="title">Data Type</div>
+    <div id="lblDataType" class="info"></div>
+
+    <div class="title">Cost Category</div>
+    <div id="lblCostCategory" class="info"></div>
+
+    <div class="title">Data Type #</div>
+    <div id="lblDataTypeNumber" class="info"></div>
+
+    <div class="title">VIN</div>
+    <div id="lblVin" class="info"></div>
+
+    <div class="title">Year</div>
+    <div id="lblYear" class="info"></div>
+
+    <div class="title">Make</div>
+    <div id="lblMake" class="info"></div>
+
+    <div class="title">Model from Invoice</div>
+    <div id="lblModelFromInvoice" class="info"></div>
+
+    <div class="title">Equip Pkg</div>
+    <div id="lblEquipPkg" class="info"></div>
+
+    <div class="title">Model</div>
+    <div id="lblModel" class="info"></div>
+
+    <div class="title">Trim</div>
+    <div id="lblTrim" class="info"></div>
+
+    <div class="title">Trim-Short</div>
+    <div id="lblTrimShort" class="info"></div>
+
+    <div class="title">Engine</div>
+    <div id="lblEngine" class="info"></div>
+
+    <div class="title">Transmission</div>
+    <div id="lblTransmission" class="info"></div>
+
+    <div class="title">Drivetrain</div>
+    <div id="lblDrivetrain" class="info"></div>
+
+    <div class="title">Package/Option Code</div>
+    <div id="lblPackageCode" class="info"></div>
+
+    <div class="title">Included?</div>
+    <div id="lblIncluded" class="info"></div>
+
+    <div class="title">Option Name</div>
+    <div id="lblOptionName" class="info"></div>
+
+    <div class="title">Price (Retail)</div>
+    <div id="lblPriceRetail" class="info"></div>
+
+    <div class="title">Cost</div>
+    <div id="lblCost" class="info"></div>
+
+    <div class="title">Profit</div>
+    <div id="lblProfit" class="info"></div>
+
+    <div class="title">Lender</div>
+    <div id="lblLender" class="info"></div>
+
+    <div class="title">Manheim</div>
+    <div id="lblManheim" class="info"></div>
+</div>

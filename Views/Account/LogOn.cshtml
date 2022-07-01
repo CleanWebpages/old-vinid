@@ -1,0 +1,122 @@
+﻿@using BotDetect.Web.UI.Mvc;
+@using vinid.Models;
+@{
+    ViewBag.Title = "Log in";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    vidbEntities db = new vidbEntities();
+}
+@section page_header{
+    <link href="@BotDetect.Web.CaptchaUrls.Absolute.LayoutStyleSheetUrl" rel="stylesheet" type="text/css" />
+    <script type="text/javascript">
+        var urlLogin = '@Url.Action("LogOn", "Account")', urlUser = '@Url.Action("Index", "User")', urlAdmin = '@Url.Action("Index", "Admin")';
+
+        $(function () {
+            $("#btnSubmit").on("click", function () {
+                if ($("#fm").form("validate")) {
+                    const username = $.trim($("#tbUsername").val()), password = $.trim($("#tbPassword").val());
+                    var captchaObj = $("#CaptchaInCode").get(0).Captcha;
+
+                    $.ajax({
+                        type: "POST",
+                        url: urlLogin,
+                        cache: false,
+                        data: { username: username, password: password, captchaid: captchaObj.Id, instanceid: captchaObj.InstanceId, userinput: $("#CaptchaInCode").val() },
+                        beforeSend: function () {
+                            $.blockUI({ message: "login..." });
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            //alert(jqXHR.status + " " + textStatus + ":" + errorThrown);
+                            $.unblockUI();
+                        },
+                        complete: function () {
+                        },
+                        success: function (result) {
+                            if (result.re && result.re == "ok") {
+                                if (result.direct == "admin") {
+                                    window.location.href = urlAdmin;
+                                }
+                                else {
+                                    window.location.href = urlUser;
+                                }
+                            }
+                            else {
+                                $.messager.alert("Login Failed", result, "error", function () {
+                                    captchaObj.ReloadImage();
+                                    $.unblockUI();
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+}
+
+<div class="main-area"  style="position: absolute; width:100%; padding:0px 15px; top: 50%; left: 50%; -ms-transform: translateX(-50%) translateY(-50%); -webkit-transform: translate(-50%,-50%); transform: translate(-50%,-50%); text-align:center;">
+    <div class="main-area-form">
+        @if (User.Identity.IsAuthenticated)
+        {
+            var theProfile = db.vi_userprofiles.Where(m => m.AspNetUser.UserName == User.Identity.Name).FirstOrDefault();
+            if (User.IsInRole("Users"))
+            {
+                <div style="text-align:center;">
+                    <div>
+                        Welcome, @((theProfile != null && !String.IsNullOrEmpty(theProfile.firstname)) ? theProfile.firstname : User.Identity.Name)!
+                    </div>
+                    <div>
+                        GO TO <a href='@Url.Action("Index", "User")'>USER PORTAL</a> OR <a href='@Url.Action("LogOff", "Account")'>LOG OFF</a><br />
+                    </div>
+                </div>
+            }
+            else if (User.IsInRole("Administrators"))
+            {
+                <div style="text-align:center;">
+                    <div>
+                        Welcome, @User.Identity.Name!
+                    </div>
+                    <div>
+                        <a href='@Url.Action("LogOff", "Account")'>LOG OFF</a><br />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div style="text-align:center;">
+                    <div>
+                        Welcome, @User.Identity.Name!
+                    </div>
+                    <div>
+                        <a href='@Url.Action("LogOff", "Account")'>LOG OFF</a><br />
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <form id="fm" method="post" onsubmit="return false;">
+                <div class="main-form-field">
+                    <input type="text" id="tbUsername" name="username" placeholder="Username" class="easyui-validatebox tb" data-options="required:true,validateOnCreate:false,err:err" />
+                </div>
+
+                <div style="height:30px;"></div>
+                <div class="main-form-field">
+                    <input type="password" id="tbPassword" name="password" placeholder="Password" class="easyui-validatebox tb" data-options="required:true,validateOnCreate:false,err:err" />
+                </div>
+
+                <div style="height:30px;"></div>
+                <div class="main-form-field">
+                    <input type="text" id="CaptchaInCode" name="captchaincode" placeholder="Verify Code" class="easyui-validatebox tb" data-options="required:true,validateOnCreate:false,err:err" />
+                    <div style="width:100%; max-width:520px; margin:0px auto;">
+                        @{ MvcCaptcha signInCaptcha = vinid.Helpers.UtilityHelpers.GetSignInCaptcha(); }
+                        @Html.Captcha(signInCaptcha)</div>
+                </div>
+
+                <div style="height:40px;"></div>
+                <div class="main-form-btns">
+                    <input type="submit" id="btnSubmit" value="SIGN IN" />
+                </div>
+            </form>
+        }
+    </div>
+</div>

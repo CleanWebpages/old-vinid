@@ -1,0 +1,513 @@
+﻿@{
+    ViewBag.Title = "Members";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+@section page_header{
+    <script type="text/javascript">
+        $.extend($.fn.validatebox.defaults.rules, {
+            min: {
+                validator: function (value, param) {
+                    return value.length >= param[0];
+                },
+                message: 'Please enter at least {0} characters.'
+            },
+            equals: {
+                validator: function (value, param) {
+                    return value == $(param[0]).val();
+                },
+                message: 'Field do not match.'
+            }
+        });
+
+        var urlGet = '@Url.Action("GetUserprofiles", "Admin")', urlCheckExist = '@Url.Action("IfUserprofileExist", "Admin")', urlSave = '@Url.Action("SaveUserprofile", "Admin")', urlGetById = '@Url.Action("GetUserprofileById", "Admin")', urlUpdate = '@Url.Action("UpdateUserprofile", "Admin")', urlDel = '@Url.Action("DelUserprofile", "Admin")';
+
+        $(function () {
+            $('#dg').datagrid({
+                url: urlGet,
+                width: $(".layout-panel-center").width(),
+                height: $(".layout-panel-center").height(),
+                idField: 'id',
+                striped: true,
+                collapsible: true,
+                pageSize: 15,
+                pageList: [15, 30, 45],
+                sortName: 'createdat',
+                sortOrder: 'desc',
+                pagination: true,
+                fitColumns: true,
+                autoRowHeight: false,
+                rowStyler: function (index, row) {
+                    return 'height:40px;';
+                },
+                singleSelect: true,
+                /*loadFilter: function (data) {
+                    for (var i = 0; i < data.rows.length; i++) {
+                        for (var att in data.rows[i]) {
+                            if (att == "amount" && data.rows[i][att] == "0")
+                                data.rows[i][att] = "";
+                            if (typeof (data.rows[i][att]) == "string") {
+                                data.rows[i][att] = data.rows[i][att].replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                            }
+                        }
+                    }
+                    return data;
+                },*/
+                onHeaderContextMenu: function (e, field) {
+                    e.preventDefault();
+                    if (!$('#tmenu').length) {
+                        createColumnMenu();
+                    }
+                    $('#tmenu').menu('show', {
+                        left: e.pageX,
+                        top: e.pageY
+                    });
+                },
+                onRowContextMenu: onRowContextMenu,
+                toolbar: "#toolbar"
+            });
+
+            $('#s').searchbox({
+                searcher: function (value, name) {
+                    $('#dg').datagrid('unselectAll');
+                    $('#dg').datagrid('load', {
+                        field: name,
+                        keyword: $.trim(value)
+                    });
+                },
+                menu: '#s_mm',
+                prompt: 'Please Input Value'
+            });
+
+            $('#dlg').dialog({
+                width: 600,
+                height: $(window).height() * 2 / 3,
+                left: $(window).width() / 2 - 600 / 2,
+                top: $(window).height() / 2 - $(window).height() * 2 / 3 / 2,
+                title: 'Profile',
+                modal: true
+            });
+
+            $("#cbChangePassword").change(function () {
+                if ($(this).prop("checked")) {
+                    $("#tbNewPassword").validatebox("enableValidation");
+                    $("#tbNewPassword2").validatebox("enableValidation");
+                    $("#pnlUserPassword").slideDown();
+                }
+                else {
+                    $("#tbNewPassword").validatebox("disableValidation");
+                    $("#tbNewPassword2").validatebox("disableValidation");
+                    $("#pnlUserPassword").slideUp();
+                }
+            });
+        });
+
+        function createColumnMenu() {
+            var tmenu = $('<div id="tmenu" style="width:100px;"></div>').appendTo('body');
+            var fields = $('#dg').datagrid('getColumnFields');
+            for (var i = 0; i < fields.length; i++) {
+                if (fields[i] == "id")
+                    $('<div iconCls="icon-empty"/>').html(fields[i]).appendTo(tmenu);
+                else
+                    $('<div iconCls="icon-ok"/>').html(fields[i]).appendTo(tmenu);
+            }
+            tmenu.menu({
+                onClick: function (item) {
+                    if (item.iconCls == 'icon-ok') {
+                        $('#dg').datagrid('hideColumn', item.text);
+                        tmenu.menu('setIcon', {
+                            target: item.target,
+                            iconCls: 'icon-empty'
+                        });
+                    } else {
+                        $('#dg').datagrid('showColumn', item.text);
+                        tmenu.menu('setIcon', {
+                            target: item.target,
+                            iconCls: 'icon-ok'
+                        });
+                    }
+                }
+            });
+        }
+
+        function onRowContextMenu(e, rowIndex, rowData) {
+            e.preventDefault();
+            $(this).datagrid('selectRow', rowIndex);
+            $("#c_mm").menu("show", {
+                left: e.pageX,
+                top: e.pageY
+            });
+        }
+
+        function newUserprofile() {
+            $('#fm').form('clear');
+            $("#tbNewUserName").validatebox("disableValidation");
+            $("#tbNewPassword").validatebox("disableValidation");
+            $("#tbNewPassword2").validatebox("disableValidation");
+            $("#pnlUpdateUser").hide();
+            $("#pnlCreateUser").show();
+            $("#tbUserName").validatebox("enableValidation");
+            $("#tbPassword").validatebox("enableValidation");
+            $("#btnSave").show();
+            $("#btnUpdate").hide();
+            $("#dlg").dialog("setTitle", "New profile");
+            $("#dlg").dialog("open");
+            $("#fm").form('validate');
+            $("#tbUserName").focus();
+        }
+
+        function saveUserprofile() {
+            if ($("#fm").form('validate')) {
+                var userName = $.trim($("#tbUserName").val()), email = $.trim($("#tbEmail").val()), password = $.trim($("#tbPassword").val()), firstName = $.trim($("#tbFirstname").val()), lastName = $.trim($("#tbLastname").val()), phone = $.trim($("#tbPhone").val()), addr = $.trim($("#tbAddr").val());
+                $.ajax({
+                    type: 'post',
+                    url: urlCheckExist,
+                    cache: false,
+                    data: { username: userName },
+                    beforeSend: function () {
+                        $("#dlg").parent().block({ message: "Saving..." });
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        $("#dlg").parent().unblock();
+                        $.messager.alert('Error', 'Failed to check if profile exist', "error");
+                    },
+                    complete: function () {
+                        //$("#dlg").parent().unblock();
+                    },
+                    success: function (result) {
+                        if (result == true) {
+                            $("#dlg").parent().unblock();
+                            $.messager.alert('Invalid', 'Duplicated username detected', "warning");
+                        }
+                        else {
+                            $.ajax({
+                                type: 'post',
+                                url: urlSave,
+                                cache: false,
+                                data: { username: userName, email: email, password: password, firstname: firstName, lastname: lastName, phone: phone, address: addr },
+                                beforeSend: function () {
+                                    //$("#dlg").parent().block({ message: "Saving..." });
+                                },
+                                error: function (jqXHR, textStatus, errorThrown) {
+
+                                },
+                                complete: function () {
+                                    $("#dlg").parent().unblock();
+                                },
+                                success: function (result) {
+                                    if (result == "ok") {
+                                        $("#dlg").dialog("close");
+                                        $('#dg').datagrid('clearSelections');
+                                        $('#dg').datagrid('reload');
+                                    }
+                                    else {
+                                        $.messager.show({
+                                            title: 'Error',
+                                            msg: result
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+        }
+
+        function editUserprofile() {
+            var row = $('#dg').datagrid('getSelected');
+            if (row) {
+                if (Number(row.id) > 0) {
+                    $.ajax({
+                        type: 'post',
+                        url: urlGetById,
+                        cache: false,
+                        data: { id: row.id },
+                        beforeSend: function () {
+                            $('#fm').form('clear');
+                            $("#btnSave").hide();
+                            $("#btnUpdate").hide();
+                            $('#dlg').dialog("setTitle", "Update profile");
+                            $('#dlg').dialog('open');
+                            $("#dlg").parent().block({ message: "loading..." });
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+
+                        },
+                        complete: function () {
+                            $("#dlg").parent().unblock();
+                        },
+                        success: function (result) {
+                            $("#profileId").val(result.id);
+                            $("#tbUserName").val(result.UserName);
+                            $("#tbEmail").val(result.email);
+                            $("#tbFirstname").val(result.firstname);
+                            $("#tbLastname").val(result.lastname);
+                            $("#tbPhone").val(result.phone);
+                            $("#tbAddr").val(result.address);
+                            $("#tbUserName").validatebox("disableValidation");
+                            $("#tbPassword").validatebox("disableValidation");
+                            $("#pnlCreateUser").hide();
+                            $("#pnlUpdateUser").show();
+                            $("#tbNewUserName").val(result.UserName);
+                            $("#tbNewUserName").validatebox("enableValidation");
+                            $("#tbNewPassword").validatebox("disableValidation");
+                            $("#tbNewPassword2").validatebox("disableValidation");
+                            $("#pnlUserPassword").hide();
+                            $("#cbChangePassword").prop("checked", false);
+                            $("#btnSave").hide();
+                            $("#btnUpdate").show();
+                            $("#fm").form("validate");
+                            $("#tbFirstname").focus();
+                        }
+                    });
+                }
+                else {
+                    $.messager.alert("Error", "Not exist", "error");
+                }
+            }
+            else {
+                $.messager.show({
+                    title: 'Invalid',
+                    msg: "Please select a row"
+                });
+            }
+        }
+
+        function updateUserprofile() {
+            if ($("#fm").form('validate')) {
+                var id = $("#profileId").val(), userName = $.trim($("#tbNewUserName").val()), email = $.trim($("#tbEmail").val()), firstName = $.trim($("#tbFirstname").val()), lastName = $.trim($("#tbLastname").val()), phone = $.trim($("#tbPhone").val()), addr = $.trim($("#tbAddr").val()), isChange = $("#cbChangePassword").prop("checked"), newPassword = $.trim($("#tbNewPassword").val());
+                $.ajax({
+                    type: 'post',
+                    url: urlUpdate,
+                    cache: false,
+                    data: { id: id, username: userName, email: email, firstname: firstName, lastname: lastName, phone: phone, address: addr, ischange: isChange, newpassword: newPassword },
+                    beforeSend: function () {
+                        $("#dlg").parent().block({ message: "updating..." });
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+
+                    },
+                    complete: function () {
+                        $("#dlg").parent().unblock();
+                    },
+                    success: function (result) {
+                        if (result == "ok") {
+                            $('#dlg').dialog('close');
+                            $('#dg').datagrid('reload');
+                        }
+                        else {
+                            $.messager.show({
+                                title: 'Error',
+                                msg: result
+                            });
+                        }
+                    }
+                });
+            }
+        }
+
+        function destroyUserprofile() {
+            var row = $('#dg').datagrid('getSelected');
+            if (row) {
+                if (row.id) {
+                    $.messager.confirm('Confirm', 'Are you sure you want to destroy this member?', function (r) {
+                        if (r) {
+                            $.ajax({
+                                type: 'POST',
+                                url: urlDel,
+                                cache: false,
+                                data: { id: row.id },
+                                beforeSend: function () {
+
+                                },
+                                error: function (jqXHR, textStatus, errorThrown) {
+
+                                },
+                                complete: function () {
+
+                                },
+                                success: function (result) {
+                                    if (result == "ok") {
+                                        $('#dg').datagrid('clearSelections');
+                                        $('#dg').datagrid('reload');
+                                    }
+                                    else {
+                                        $.messager.show({
+                                            title: 'Error',
+                                            msg: result
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+                else {
+                    $.messager.alert("Error", "Not exist", "error");
+                }
+            }
+            else {
+                $.messager.show({
+                    title: 'Invalid',
+                    msg: "Please select a row"
+                });
+            }
+        }
+    </script>
+}
+@section nav{
+    <div id="aa" class="easyui-accordion" data-options="multiple:false,selected:0">
+        @Html.Action("Navigation", new { group = "Account", item = "list-acct" })
+    </div>
+}
+<div class="grid">
+    <table id="dg" title="All Members">
+        <thead>
+            <tr>
+                <th field="id" data-options="width:50,hidden:true,sortable:true">
+                    <span style="color: green; font-weight: bold;">ID</span>
+                </th>
+                <th field="createdat" width="100" sortable="true">
+                    <span style="color: green; font-weight: bold;">Created</span>
+                </th>
+                <th field="UserName" width="100" sortable="true">
+                    <span style="color: green; font-weight: bold;">Username</span>
+                </th>
+                <th field="firstname" width="50" sortable="true">
+                    <span style="color: green; font-weight: bold;">Firstname</span>
+                </th>
+                <th field="lastname" width="50" sortable="true">
+                    <span style="color: green; font-weight: bold;">Lastname</span>
+                </th>
+                <th field="phone" width="50" sortable="true">
+                    <span style="color: green; font-weight: bold;">Phone</span>
+                </th>
+                <th field="address" width="100" sortable="true">
+                    <span style="color: green; font-weight: bold;">Address</span>
+                </th>
+            </tr>
+        </thead>
+    </table>
+    <div id="toolbar">
+        <a href="javascript:void 0;" class="easyui-linkbutton" iconcls="icon-add" plain="true"
+           onclick="newUserprofile()" style="float: left;">New</a>
+        <div class="datagrid-btn-separator">
+        </div>
+        <a href="javascript:void 0;" class="easyui-linkbutton" iconcls="icon-edit" plain="true"
+           onclick="editUserprofile()" style="float: left;">Edit</a>
+        <a href="javascript:void 0;" class="easyui-linkbutton" iconcls="icon-remove" plain="true"
+           onclick="destroyUserprofile()" style="float: left;">Remove</a>
+        <div class="datagrid-btn-separator">
+        </div>
+        <div style="float: right;">
+            <input id="s" style="width:300px;" />
+        </div>
+        <div style="clear: both;">
+        </div>
+    </div>
+    <div id="s_mm" style="width: 140px;">
+        <div data-options="name:'s_username'">Username</div>
+        <div data-options="name:'s_firstname'">Firstname</div>
+        <div data-options="name:'s_lastname'">Lastname</div>
+        <div data-options="name:'s_phone'">Phone</div>
+        <div data-options="name:'s_addr'">Address</div>
+    </div>
+    <div id="c_mm" class="easyui-menu" style="width: 220px;">
+        <div onclick="editUserprofile()" data-options="iconCls:'icon-edit'">
+            Edit
+        </div>
+        <div onclick="destroyUserprofile()" data-options="iconCls:'icon-remove'">
+            Remove
+        </div>
+    </div>
+</div>
+<div id="dlg" class="easyui-dialog" style="padding: 10px 20px;" closed="true" buttons="#dlg-buttons">
+    <form id="fm" method="post" onsubmit="return false;">
+        <fieldset>
+            <legend style="float:none; padding-bottom:5px;">General Info</legend>
+            <div class="fitem">
+                <label>
+                    Firstname:
+                </label>
+                <input type="text" id="tbFirstname" name="Firstname" maxlength="50" style="width:360px;" />
+            </div>
+            <div class="fitem">
+                <label>
+                    Lastname:
+                </label>
+                <input type="text" id="tbLastname" name="Lastname" maxlength="50" style="width:360px;" />
+            </div>
+            <div class="fitem">
+                <label>
+                    Phone:
+                </label>
+                <input type="text" id="tbPhone" name="Phone" maxlength="50" style="width: 360px;" />
+            </div>
+            <div class="fitem">
+                <label>
+                    Address:
+                </label>
+                <input type="text" id="tbAddr" name="Address" maxlength="300" style="width: 360px;" />
+            </div>
+            <div class="fitem">
+                <label>
+                    Email:
+                </label>
+                <input type="text" id="tbEmail" name="Email" class="easyui-validatebox" data-options="validType:'email'" maxlength="256" style="width:360px;" />
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend style="float:none; padding-bottom:5px;">Account info</legend>
+            <div id="pnlUpdateUser" style="display:none;">
+                <div class="fitem">
+                    <span style="display:inline-block; width: 120px;">
+                        Username
+                    </span>
+                    <input type="text" id="tbNewUserName" name="NewUserName" class="easyui-validatebox" data-options="required:true,validType:'min[4]'" style="width: 340px;" maxlength="256" />
+                </div>
+                <div class="fitem">
+                    <label style="width:auto;">
+                        <input type="checkbox" id="cbChangePassword" name="cbChangePassword" style="margin:3px 3px 3px 0px;" />Change Password?
+                    </label>
+                </div>
+                <div id="pnlUserPassword" style="display:none;">
+                    <div class="fitem">
+                        <label style="width: 120px;">
+                            New Password
+                        </label>
+                        <input type="password" id="tbNewPassword" name="NewPassword" class="easyui-validatebox" data-options="required:true,validType:'min[6]'" style="width: 340px;" maxlength="256" />
+                    </div>
+                    <div class="fitem">
+                        <label style="width: 120px;">
+                            Confirm Password
+                        </label>
+                        <input type="password" id="tbNewPassword2" name="NewPassword2" class="easyui-validatebox" data-options='required:true,validType:"equals[\"#tbNewPassword\"]"' style="width: 340px;" maxlength="256" />
+                    </div>
+                </div>
+            </div>
+            <div id="pnlCreateUser" style="display:none;">
+                <div class="fitem">
+                    <label>
+                        Username:
+                    </label>
+                    <input type="text" id="tbUserName" name="UserName" class="easyui-validatebox" data-options="required:true,validType:'min[4]'" style="width: 360px;" maxlength="256" />
+                </div>
+                <div class="fitem">
+                    <label>
+                        Password:
+                    </label>
+                    <input type="password" id="tbPassword" name="Password" class="easyui-validatebox" data-options="required:true,validType:'min[6]'" style="width: 360px;" maxlength="256" />
+                </div>
+            </div>
+        </fieldset>
+        <input type="hidden" id="profileId" />
+    </form>
+    <div id="" style="margin-top:15px; text-align:center;"></div>
+</div>
+<div id="dlg-buttons">
+    <a href="javascript:void 0;" id="btnSave" class="easyui-linkbutton" iconcls="icon-ok" onclick="saveUserprofile()" style="display: none;">Save</a>
+    <a href="javascript:void 0;" id="btnUpdate" class="easyui-linkbutton" iconcls="icon-ok" onclick="updateUserprofile()" style="display: none;">Update</a>
+    <a href="javascript:void 0;" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#dlg').dialog('close')">Cancel</a>
+</div>
+
+

@@ -1,0 +1,105 @@
+﻿@{
+    ViewBag.Title = "Search";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+@section page_header{
+    <style type="text/css">
+        #s {
+            width:100%;
+            max-width:300px;
+        }
+        .sort-indicator {
+            position: relative;
+            cursor: pointer;
+            color: #333;
+            font-size: 20px;
+        }
+        .sort-indicator:before {
+            position: absolute;
+            left: 0px;
+            top: -15px;
+        }
+        .pagination-page-list, .pagination .pagination-num {
+            border-color: #4B75C2;
+        }
+        .pagination-first, .pagination-prev, .pagination-next, .pagination-last, .pagination-load {
+            background-image: url(/Content/images/pagination_icons.png);
+        }
+        #pagination_vehrec .l-btn {
+            opacity: 1;
+        }
+        table#list_vehrec {
+            table-layout: fixed;
+        }
+        table#list_vehrec thead td{
+            width: 100%;
+            word-break: keep-all;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align:left;
+        }
+        table#list_vehrec tbody td {
+            width: 100%;
+            word-break: keep-all;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align:left;
+        }
+        hr{
+            margin:0px;
+        }
+
+        @@media screen and (max-width: 320px) {
+            #s {
+                max-width: 200px;
+            }
+        }
+        @@media screen and (min-width: 321px) and (max-width: 470px) {
+            #s {
+                max-width: 300px;
+            }
+        }
+        @@media screen and (max-width: 768px) {
+            table#list_vehrec thead td span {
+                display:none;
+            }
+        }
+        @@media screen and (min-width: 769px) and (max-width: 1080px) {
+            table#list_vehrec thead td span {
+                font-size: 13px;
+            }
+        }
+    </style>
+    <script type="text/javascript">
+        var urlList = '@Url.Action("ListVehData", "User")';
+
+        $(function () {
+            $('#s').searchbox({
+                searcher: function (value, name) {
+                    field = name;
+                    keyword = $.trim(value);
+                    window.location.href = urlList + "?field=" + field + "&keyword=" + keyword;
+                },
+                menu: '#s_mm',
+                prompt: 'Please Input Value'
+            });
+
+        });
+
+    </script>
+}
+
+<div class="main-area" style="position: absolute; width: 100%; padding: 0px 15px; top: 50%; left: 50%; -ms-transform: translateX(-50%) translateY(-50%); -webkit-transform: translate(-50%,-50%); transform: translate(-50%,-50%); text-align: center; ">
+    <div>
+        <img src='@Url.Content("~/Content/images/logo.png")' alt="" style="width:100%; max-width:520px;" />
+    </div>
+    <div style="height:30px;"></div>
+    <div>
+        <input type="text" id="s" />
+        <div id="s_mm" style="width: 120px;">
+            <div data-options="name:'s_vin'">VIN</div>
+        </div>
+    </div>
+</div>

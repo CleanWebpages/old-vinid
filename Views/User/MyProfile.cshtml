@@ -1,0 +1,140 @@
+﻿@{
+    ViewBag.Title = "MY PROFILE";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+@section page_header{
+    <style type="text/css">
+        .main-form-label{
+            max-width:520px;
+            margin:0px auto;
+            text-align:left;
+        }
+        .tb {
+            padding:0px 4px;
+        }
+    </style>
+    <script type="text/javascript">
+        var urlGet = '@Url.Action("GetMyProfile", "User")', urlUpdate = '@Url.Action("UpdateMyProfile", "User")';
+
+        $(function () {
+            loadMyProfile();
+
+            $("#btnSubmit").on("click", function () {
+                var firstname = $.trim($("#tbFirstname").val()), lastname = $.trim($("#tbLastname").val()), email = $.trim($("#tbEmail").val()), phone = $.trim($("#tbPhone").val()), address = $.trim($("#tbAddress").val());
+
+                if ($("#fm").form("validate")) {
+                    $.ajax({
+                        type: "POST",
+                        url: urlUpdate,
+                        cache: false,
+                        data: { firstname: firstname, lastname: lastname, email: email, phone: phone, address: address },
+                        beforeSend: function () {
+                            $("#btnSubmit").hide();
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            //alert(jqXHR.status + " " + textStatus + ":" + errorThrown);
+                            $("#btnSubmit").show();
+                        },
+                        complete: function () {
+
+                        },
+                        success: function (result) {
+                            if (result == "ok") {
+                                $.messager.alert("Profile", "<div style='width:240px;'>Your profile has been updated.</div>", "info", function () {
+                                    //window.location.reload();
+                                    $("#btnSubmit").show();
+                                });
+                            }
+                            else {
+                                $.messager.alert("Profile", result, "error", function () {
+                                    //window.location.reload();
+                                    $("#btnSubmit").show();
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        function loadMyProfile() {
+            $.ajax({
+                type: "POST",
+                url: urlGet,
+                cache: false,
+                data: null,
+                beforeSend: function () {
+
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    //alert(jqXHR.status + " " + textStatus + ":" + errorThrown);
+                },
+                complete: function () {
+
+                },
+                success: function (data) {
+                    $("#tbFirstname").val(data.firstname);
+                    $("#tbLastname").val(data.lastname);
+                    $("#tbEmail").val(data.email),
+                    $("#tbPhone").val(data.phone);
+                    $("#tbAddress").val(data.address);
+                }
+            });
+        }
+    </script>
+
+}
+
+<div style="height:40px;"></div>
+<div class="main-area" style="text-align:center;">
+    <div class="main-area-logo">
+        <img src='@Url.Content("~/Content/images/logo.png")' alt="" />
+    </div>
+    <div style="font-size:40px;">MY PROFILE</div>
+    <div style="height:30px;"></div>
+    <div class="main-area-form">
+        <form id="fm" method="post" onsubmit="return false;">
+            <div class="main-form-label">FIRST NAME</div>
+            <div class="main-form-field">
+                <input type="text" id="tbFirstname" name="firstname" class="easyui-validatebox tb" data-options="required:true,validateOnCreate:false,err:err" />
+            </div>
+
+            <div style="height:30px;"></div>
+            <div class="main-form-label">LAST NAME</div>
+            <div class="main-form-field">
+                <input type="text" id="tbLastname" name="lastname" class="easyui-validatebox tb" data-options="required:true,validateOnCreate:false,err:err" />
+            </div>
+
+            <div style="height:30px;"></div>
+            <div class="main-form-label">EMAIL</div>
+            <div class="main-form-field">
+                <input type="text" id="tbEmail" name="email" class="easyui-validatebox tb" data-options="required:true,validType:'email',validateOnCreate:false,err:err" />
+            </div>
+
+            <div style="height:30px;"></div>
+            <div class="main-form-label">PHONE</div>
+            <div class="main-form-field">
+                <input type="text" id="tbPhone" name="phone" class="tb" />
+            </div>
+
+            <div style="height:30px;"></div>
+            <div class="main-form-label">ADDRESS</div>
+            <div class="main-form-field">
+                <input type="text" id="tbAddress" name="address" class="tb" />
+            </div>
+
+            <div style="height:40px;"></div>
+            <div class="main-form-btns">
+                <input type="submit" id="btnSubmit" value="UPDATE" />
+            </div>
+
+            <div style="height:40px;"></div>
+            <div style="font-size:24px; text-align:center;">
+                <a href='@Url.Action("ChangePassword", "User")' style="text-decoration:underline;">CHANGE PASSWORD</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+

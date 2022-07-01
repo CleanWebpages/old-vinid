@@ -1,0 +1,278 @@
+﻿@{
+    ViewBag.Title = "List";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+@section page_header{
+    <style type="text/css">
+        #s {
+            width:100%;
+            max-width:300px;
+        }
+        .sort-indicator {
+            position: relative;
+            cursor: pointer;
+            color: #333;
+            font-size: 20px;
+        }
+        .sort-indicator:before {
+            position: absolute;
+            left: 0px;
+            top: -15px;
+        }
+        .pagination-page-list, .pagination .pagination-num {
+            border-color: #4B75C2;
+        }
+        .pagination-first, .pagination-prev, .pagination-next, .pagination-last, .pagination-load {
+            background-image: url(/Content/images/pagination_icons.png);
+        }
+        #pagination_vehrec .l-btn {
+            opacity: 1;
+        }
+        table#list_vehrec {
+            table-layout: fixed;
+        }
+        table#list_vehrec thead td{
+            width: 100%;
+            word-break: keep-all;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align:left;
+        }
+        table#list_vehrec tbody td {
+            width: 100%;
+            word-break: keep-all;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align:left;
+        }
+        hr{
+            margin:0px;
+        }
+
+        @@media screen and (max-width: 320px) {
+            #s {
+                max-width: 200px;
+            }
+        }
+        @@media screen and (min-width: 321px) and (max-width: 470px) {
+            #s {
+                max-width: 300px;
+            }
+        }
+        @@media screen and (max-width: 768px) {
+            table#list_vehrec thead td span {
+                display:none;
+            }
+        }
+        @@media screen and (min-width: 769px) and (max-width: 1080px) {
+            table#list_vehrec thead td span {
+                font-size: 13px;
+            }
+        }
+    </style>
+    <script type="text/javascript">
+        var sort = "id", order = "asc";
+        var field = "@ViewBag.SearchField", keyword = "@ViewBag.SearchKeyword";
+
+        var urlGet = '@Url.Action("GetVehRecords", "User")';
+        var urlView = '@Url.Action("VehRecord", "User")';
+
+        $(function () {
+            $('#s').searchbox({
+                searcher: function (value, name) {
+                    field = name;
+                    keyword = $.trim(value);
+                    findVehRecs(field, keyword);
+                },
+                menu: '#s_mm',
+                prompt: 'Please Input Value'
+            });
+
+            $('#pagination_vehrec').pagination({
+                pageNumber: 1,
+                pageSize: 20,
+                pageList: [10, 20, 30],
+                displayMsg: "{from} to {to} of {total}",
+                onSelectPage: function (pageNumber, pageSize) {
+                    $(this).pagination('loading');
+                    field = $("#s").searchbox("getName");
+                    keyword = $.trim($("#s").searchbox("getValue"));
+                    $.ajax({
+                        type: 'POST',
+                        url: urlGet + '?page=' + pageNumber + "&rows=" + pageSize + "&sort=" + sort + "&order=" + order,
+                        cache: false,
+                        data: { field: field, keyword: keyword },
+                        beforeSend: function () {
+                            $.blockUI({ message: null });
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            //alert(jqXHR.status + " " + textStatus + ":" + errorThrown);
+                        },
+                        complete: function () {
+
+                        },
+                        success: function (data) {
+                            $.unblockUI();
+                            $("#list_vehrec>tbody").html("");
+                            let rowClass = "data-row";
+                            $(data.rows).each(function (index, value) {
+                                if (index % 2 == 0) {
+                                    rowClass = "data-row";
+                                }
+                                else {
+                                    rowClass = "data-row-alt";
+                                }
+                                var node = '<tr class="' + rowClass + '"><td>' + value.veh_no + '</td><td><a href="' + urlView + '/' + value.id + '">' + value.vin + '</a></td><td>' + value.year + '</td><td>' + value.make + '</td><td style="text - align: center; ">' + value.model + '</td></tr> ';
+                                if (index + 1 < data.rows.length) {
+                                    node += '<tr><td colspan="5"><hr /></td></tr>';
+                                }
+                                $("#list_vehrec>tbody").append(node);
+                            });
+                        }
+                    });
+                    $(this).pagination('loaded');
+                },
+                onChangePageSize: function (pageSize) {
+
+                },
+                onRefresh: function (pageNumber, pageSize) {
+
+                }
+            });
+
+            if (field.length > 0 && keyword.length > 0) {
+                $("#s").searchbox("selectName", field);
+                $("#s").searchbox("setValue", keyword);
+            }
+            findVehRecs(field, keyword);
+
+            $(".sort-indicator").on("click", function () {
+                var newSort = $(this).attr("id").replace("sortIndicator_", "");
+                if (newSort == sort) {
+                    $(this).removeClass("fa-sort-up");
+                    $(this).removeClass("fa-sort-down");
+                    order = (order == "asc" ? "desc" : "asc");
+                    $(this).addClass(order == "asc" ? "fa-sort-up" : "fa-sort-down");
+                }
+                else {
+                    resetSortClass();
+                    order = "asc";
+                    $(this).addClass("fa-sort-up");
+                    $(this).css({ color: "#fff" });
+                }
+                sort = newSort;
+                findVehRecs(field, keyword);
+            });
+        });
+
+        function resetSortClass() {
+            $(".sort-indicator").removeClass("fa-sort-up");
+            $(".sort-indicator").removeClass("fa-sort-down");
+            $(".sort-indicator").addClass("fa-sort");
+            $(".sort-indicator").css({ color: "#333" });
+        }
+
+        function findVehRecs(field, keyword) {
+            $.ajax({
+                type: 'POST',
+                url: urlGet + "?sort=" + sort + "&order=" + order,
+                cache: false,
+                data: { field: field, keyword: keyword },
+                beforeSend: function () {
+                    $.blockUI({ message: null });
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    //alert(jqXHR.status + " " + textStatus + ":" + errorThrown);
+                },
+                complete: function () {
+
+                },
+                success: function (data) {
+                    $.unblockUI();
+                    $("#list_vehrec>tbody").html("");
+                    let rowClass = "data-row";
+                    $(data.rows).each(function (index, value) {
+                        if (index % 2 == 0) {
+                            rowClass = "data-row";
+                        }
+                        else {
+                            rowClass = "data-row-alt";
+                        }
+                        var node = '<tr class="' + rowClass + '"><td>' + value.veh_no + '</td><td><a href="' + urlView + '/' + value.id + '">' + value.vin + '</a></td><td>' + value.year + '</td><td>' + value.make + '</td><td style="text-align:center;">' + value.model + '</td></tr>';
+                        if (index + 1 < data.rows.length) {
+                            node += '<tr><td colspan="5"><hr /></td></tr>';
+                        }
+                        $("#list_vehrec>tbody").append(node);
+                    });
+                    $("#pagination_vehrec").pagination('refresh', {
+                        total: data.total,
+                        pageNumber: 1,
+                        pageSize: 20
+                    });
+                }
+            });
+        }
+    </script>
+}
+
+<div style="height:40px;"></div>
+<div class="main-area" style="text-align:center;">
+    <div class="row">
+        <div class="col-lg-3 col-sm-12">
+            <div style="text-align:left;">
+                
+            </div>
+        </div>
+        <div class="col-lg-6 col-sm-12">
+            <div class="main-area-logo">
+                <img src='@Url.Content("~/Content/images/logo.png")' alt="" />
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-12">
+            <div style="text-align: right;">
+                <div style="padding:20px 0px 20px 0px;">
+                    <input type="text" id="s" />
+                    <div id="s_mm" style="width: 120px;">
+                        <div data-options="name:'s_vin'">VIN</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="header-sep" />
+
+    <div>
+        <div style="height:20px;"></div>
+        <table id="list_vehrec" style="width:100%; border-collapse:collapse;" cellpadding="0" cellspacing="0">
+            <thead style="font-weight:700;">
+                <tr class="head-row">
+                    <td style="width:8%;">
+                        <span>No</span> <i id="sortIndicator_veh_no" class="fa fa-sort sort-indicator"></i>
+                    </td>
+                    <td style="width:38%;">
+                        <span>VIN</span> <i id="sortIndicator_vin" class="fa fa-sort sort-indicator"></i>
+                    </td>
+                    <td style="width:15%;">
+                        <span>Year</span> <i id="sortIndicator_year" class="fa fa-sort sort-indicator"></i>
+                    </td>
+                    <td style="width:20%;">
+                        <span>Make</span> <i id="sortIndicator_make" class="fa fa-sort sort-indicator"></i>
+                    </td>
+                    <td style="width:20%; text-align:center;">
+                        <span>Model</span> <i id="sortIndicator_model" class="fa fa-sort sort-indicator"></i>
+                    </td>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <div style="height:40px;"></div>
+        <div style="text-align:center;">
+            <div id="pagination_vehrec" style="display:inline-block;"></div>
+        </div>
+
+    </div>
+
+</div>

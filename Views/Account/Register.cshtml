@@ -1,0 +1,166 @@
+﻿@using vinid.Models;
+@{
+    ViewBag.Title = "Register";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    vidbEntities db = new vidbEntities();
+}
+@section page_header{
+    <script type="text/javascript">
+        $.extend($.fn.validatebox.defaults.rules, {
+            equals: {
+                validator: function (value, param) {
+                    return value == $(param[0]).val();
+                },
+                message: 'Passwords do not match.'
+            }
+        });
+
+        var urlDoReg = '@Url.Action("Register", "Account")';
+        var urlLogin = '@Url.Action("LogOn", "Account")', urlUser = '@Url.Action("Index", "User")';
+
+        $(function () {
+            $("#tbPassword2").validatebox({ validType: "equals['#tbPassword']" });
+
+            $("#btnSubmit").on("click", function () {
+                var username = $.trim($("#tbUsername").val()), password = $.trim($("#tbPassword").val()), name = $.trim($("#tbName").val()), comName = $.trim($("#tbComName").val()), phone = $.trim($("#tbPhone").val()), address = $.trim($("#tbAddress").val());
+                var firstname = "", lastname = "", nameParts = name.split(' ');
+                if (nameParts.length >= 2) {
+                    firstname = nameParts[0];
+                    lastname = nameParts[1];
+                }
+                else if (nameParts.length == 1) {
+                    firstname = name;
+                }
+
+                if ($("#fm").form("validate")) {
+                    if (username.length == 0 || password.length == 0 || name.length == 0 || comName.length == 0 || phone.length == 0 || address.length == 0) {
+                        $.messager.alert({
+                            title: "Invalid", msg: "All fields are required.", icon: "warning", width: 240, fn: function () { ; }
+                        });
+                    }
+                    else if (password.length < 6) {
+                        $.messager.alert({
+                            title: "Invalid", msg: "Your password must be at least 6 characters long.", icon: "warning", width: 240, fn: function () { ; }
+                        });
+                    }
+                    else {
+                        $.ajax({
+                            type: "POST",
+                            url: urlDoReg,
+                            cache: false,
+                            data: { username: username, password: password, firstname: firstname, lastname: lastname, comname: comName, phone: phone, address: address },
+                            beforeSend: function () {
+                                $.blockUI({ message: "processing..." });
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                //alert(jqXHR.status + " " + textStatus + ":" + errorThrown);
+                                $.unblockUI();
+                            },
+                            complete: function () {
+
+                            },
+                            success: function (result) {
+                                if (result && result == "ok") {
+                                    window.location.href = urlUser;
+                                }
+                                else {
+                                    $.messager.alert("Registration Failed", result, "error", function () {
+                                        $.unblockUI();
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+}
+
+<div style="margin-top:30px; font-size:30px; font-weight:500; text-align:center;">
+    <a href='@Url.Action("LogOn", "Account")' style="text-decoration:underline;">LOG IN</a> OR SIGN UP
+</div>
+
+<div style="margin-top:40px;">
+    @if (User.Identity.IsAuthenticated)
+    {
+        var theProfile = db.vi_userprofiles.Where(m => m.AspNetUser.UserName == User.Identity.Name).FirstOrDefault();
+        if (User.IsInRole("Users"))
+        {
+            <div style="font-size:30px; font-weight:500; text-align:center;">
+                Welcome, @((theProfile != null && !String.IsNullOrEmpty(theProfile.firstname)) ? theProfile.firstname : User.Identity.Name)!
+            </div>
+            <div style="margin-top:30px; font-size:30px; font-weight:500; text-align:center;">
+                GO TO <a href='@Url.Action("Index", "User")' style="text-decoration:underline;">USER PORTAL</a> OR <a href='@Url.Action("LogOff", "Account")' style="text-decoration:underline;">LOG OFF</a><br />
+            </div>
+        }
+        else if (User.IsInRole("Administrators"))
+        {
+            <div style="font-size:30px; font-weight:500; text-align:center;">
+                Welcome, @User.Identity.Name!
+            </div>
+            <div style="margin-top:30px; font-size:30px; font-weight:500; text-align:center;">
+                GO TO <a href='@Url.Action("Index", "Admin")' style="text-decoration:underline;">ADMIN PORTAL</a> OR <a href='@Url.Action("LogOff", "Account")' style="text-decoration:underline;">LOG OFF</a><br />
+            </div>
+        }
+        else
+        {
+            <div style="font-size:30px; font-weight:500; text-align:center;">
+                Welcome, @User.Identity.Name!
+            </div>
+            <div style="margin-top:30px; font-size:30px; font-weight:500; text-align:center;">
+                <a href='@Url.Action("LogOff", "Account")' style="text-decoration:underline;">LOG OFF</a><br />
+            </div>
+        }
+    }
+    else
+    {
+        <form id="fm" method="post" onsubmit="return false;">
+            <div style="display:table; width:90%; max-width:480px; margin:0px auto;">
+                <div style="display:table-row;">
+                    <div style="display:table-cell; vertical-align:middle;">
+
+                        <div style="margin-top:15px; padding:8px 5px; border:solid 1px #000; border-radius:8px;">
+                            <input type="text" id="tbUsername" name="username" placeholder="EMAIL ADDRESS" class="easyui-validatebox" data-options="required:true,validType:'email'" style="width:calc(100% - 30px); border:none; font-size:20px;" />
+                        </div>
+
+                        <div style="margin-top:15px; padding:8px 5px; border:solid 1px #000; border-radius:8px;">
+                            <input type="password" id="tbPassword" name="password" placeholder="PASSWORD" class="easyui-validatebox" data-options="required:true" style="width:calc(100% - 30px); border:none; font-size:20px;" />
+                        </div>
+
+                        <div style="margin-top:15px; padding:8px 5px; border:solid 1px #000; border-radius:8px;">
+                            <input type="password" id="tbPassword2" name="password2" placeholder="RE-ENTER PASSWORD" class="easyui-validatebox" data-options="required:true" style="width:calc(100% - 30px); border:none; font-size:20px;" />
+                        </div>
+
+                        <div style="height:50px;"></div>
+                        <div style="padding:8px 5px; border:solid 1px #000; border-radius:8px;">
+                            <input type="text" id="tbName" placeholder="FIRST & LAST NAME" maxlength="100" class="easyui-validatebox" data-options="required:true" style="width:calc(100% - 30px); border:none; font-size:20px;" />
+                            <i id="tipName" class="far fa-question-circle easyui-tooltip" title="Your name" data-options="position:'top'" style="color:#666666; font-size:20px;">tip</i>
+                        </div>
+
+                        <div style="margin-top:15px; padding:8px 5px; border:solid 1px #000; border-radius:8px;">
+                            <input type="text" id="tbComName" placeholder="COMPANY NAME" maxlength="50" class="easyui-validatebox" data-options="required:true" style="width:calc(100% - 30px); border:none; font-size:20px;" />
+                            <i id="tipComName" class="far fa-question-circle easyui-tooltip" title="Your company" data-options="position:'top'" style="color:#666666; font-size:20px;">tip</i>
+                        </div>
+
+                        <div style="margin-top:15px; padding:8px 5px; border:solid 1px #000; border-radius:8px;">
+                            <input type="text" id="tbPhone" placeholder="PHONE NUMBER" maxlength="50" class="easyui-validatebox" data-options="required:true" style="width:calc(100% - 30px); border:none; font-size:20px;" />
+                            <i id="tipPhone" class="far fa-question-circle easyui-tooltip" title="Your company phone number" data-options="position:'top'" style="color:#666666; font-size:20px;">tip</i>
+                        </div>
+
+                        <div style="margin-top:15px; padding:8px 5px; border:solid 1px #000; border-radius:8px;">
+                            <input type="text" id="tbAddress" placeholder="ADDRESS" maxlength="300" class="easyui-validatebox" data-options="required:true" style="width:calc(100% - 30px); border:none; font-size:20px;" />
+                            <i id="tipAddress" class="far fa-question-circle easyui-tooltip" title="Your company address" data-options="position:'top'" style="color:#666666; font-size:20px;">tip</i>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; text-align:center;">
+                <input type="submit" id="btnSubmit" value="SIGN UP" style="line-height:35px; padding:0px 20px; border:solid 1px #000; border-radius:15px; font-size:30px; font-weight:500;" />
+            </div>
+            <div style="height:20px;"></div>
+        </form>
+    }
+</div>

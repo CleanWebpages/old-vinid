@@ -1,0 +1,21 @@
+﻿@{
+    ViewBag.Title = "Administrator Control Panel";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+@section page_header{
+    <script type="text/javascript">
+        $(function () {
+
+        });
+    </script>
+}
+@section nav{
+    <div id="aa" class="easyui-accordion" data-options="multiple:false,selected:-1">
+        @Html.Action("Navigation", new { group = "", item = "" })
+    </div>
+}
+<div class="grid">
+
+</div>
+
+
